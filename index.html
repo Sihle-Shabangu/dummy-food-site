@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Foodie Haven Café</title>
+    <link rel="stylesheet" href="styles.css">
+
+</head>
+<body>
+    <header>
+        <h1>Foodie Haven Café</h1>
+        <p>Delicious Meals & Cozy Vibes</p>
+    </header>
+    <nav>
+        <a href="#products">Menu</a>
+        <a href="#checkout">Checkout (<span id="cart-count">0</span>)</a>
+    </nav>
+
+    <section id="products" class="products">
+        <!-- Products will be dynamically added here -->
+    </section>
+
+    <section id="checkout" class="checkout">
+        <h2>Checkout</h2>
+        <form id="checkout-form">
+            <h3>Cart Items</h3>
+            <div id="cart-items"></div>
+            <h3>Total: R<span id="cart-total">0</span></h3>
+            <input type="text" id="name" placeholder="Full Name" required>
+            <input type="email" id="email" placeholder="Email" required>
+            <input type="tel" id="phone" placeholder="Phone Number" required>
+            <input type="text" id="address" placeholder="Delivery Address" required>
+            <select id="payment-method" required>
+                <option value="" disabled selected>Select Payment Method</option>
+                <option value="payfast">Payfast</option>
+                <option value="cod">Cash on Delivery</option>
+            </select>
+            <button type="submit">Proceed to Payment</button>
+        </form>
+    </section>
+
+    <footer>
+        <p>© 2025 Foodie Haven Café. All rights reserved.</p>
+    </footer>
+
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-md5/0.7.3/md5.min.js"></script>
+    <script src="script.js" defer></script>
+</body>
+</html>

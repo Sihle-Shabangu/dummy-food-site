@@ -82,12 +82,66 @@ function removeFromCart(productId) {
     }
 }
 
+// Convert data array to string for Payfast
+function dataToString(dataArray) {
+    let pfParamString = '';
+    for (let key in dataArray) {
+        if (dataArray.hasOwnProperty(key) && dataArray[key] !== null && dataArray[key] !== undefined) {
+            pfParamString += `${key}=${encodeURIComponent(dataArray[key].toString().trim()).replace(/%20/g, '+')}&`;
+        }
+    }
+    return pfParamString.slice(0, -1);
+}
+
+// Generate Payfast signature
+function generateSignature(data, passPhrase) {
+    let pfParamString = dataToString(data);
+    if (passPhrase) {
+        pfParamString += `&passphrase=${encodeURIComponent(passPhrase.trim()).replace(/%20/g, '+')}`;
+    }
+    return md5(pfParamString);
+}
+
+// Generate Payfast payment identifier
+async function generatePaymentIdentifier(pfParamString) {
+    try {
+        const response = await axios.post('https://sandbox.payfast.co.za/onsite/process', pfParamString, {
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        });
+        console.log('Payfast response:', response.data); // Log response for debugging
+        return response.data.uuid || null;
+    } catch (error) {
+        console.error('Error generating payment identifier:', error);
+        if (error.response) {
+            console.error('Payfast error response:', error.response.data); // Log Payfast error details
+            alert(`Payment error: ${error.response.data || 'Failed to generate payment identifier. Please check your merchant details and try again.'}`);
+        } else {
+            alert('Payment error: Unable to connect to Payfast. Please try again later.');
+        }
+        return null;
+    }
+}
+
 // Handle checkout form submission
 document.getElementById('checkout-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     
     if (cart.length === 0) {
         alert('Your cart is empty!');
+        return;
+    }
+
+    // Check if md5 is defined
+    if (typeof md5 === 'undefined') {
+        console.error('MD5 library not loaded');
+        alert('Payment processing error: MD5 library not loaded. Please try again later.');
+        return;
+    }
+
+    // Check if axios is defined
+    if (typeof axios === 'undefined') {
+        console.error('Axios library not loaded');
+        alert('Payment processing error: Axios library not loaded. Please try again later.');
         return;
     }
 
@@ -98,14 +152,12 @@ document.getElementById('checkout-form').addEventListener('submit', async (e) =>
     const address = document.getElementById('address').value;
 
     if (paymentMethod === 'payfast') {
-        // Payfast integration
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = 'https://sandbox.payfast.co.za/eng/process'; // Use sandbox for testing
+        // Payfast Onsite Payment
+        const passPhrase = 'LetU5DefGo123'; // Replace with your Payfast sandbox passphrase
 
-        const fields = {
-            merchant_id: '10000100', // Replace with your Payfast merchant ID
-            merchant_key: '46f0cd694581a', // Replace with your Payfast merchant key
+        const data = {
+            merchant_id: '10039982', // Replace with your Payfast sandbox merchant ID
+            merchant_key: 'u4exfl3c1ruhy', // Replace with your Payfast sandbox merchant key
             return_url: window.location.origin + '/success.html',
             cancel_url: window.location.origin + '/cancel.html',
             notify_url: window.location.origin + '/notify.html',
@@ -113,29 +165,35 @@ document.getElementById('checkout-form').addEventListener('submit', async (e) =>
             email_address: email,
             cell_number: phone,
             m_payment_id: 'ORDER_' + Date.now(),
-            amount: cart.reduce((sum, item) => sum + item.price * item.quantity, 0),
+            amount: cart.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2),
             item_name: 'Food Order',
-            item_description: cart.map(item => `${item.name} x${item.quantity}`).join(', ')
+            item_description: cart.map(item => `${item.name} x${item.quantity}`).join(', '),
+            payment_method: 'cc' // Required for Onsite Payment (credit card)
         };
 
-        for (const [key, value] of Object.entries(fields)) {
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = key;
-            input.value = value;
-            form.appendChild(input);
-        }
-
         // Generate Payfast signature
-        const signature = generatePayfastSignature(fields);
-        const signatureInput = document.createElement('input');
-        signatureInput.type = 'hidden';
-        signatureInput.name = 'signature';
-        signatureInput.value = signature;
-        form.appendChild(signatureInput);
+        data.signature = generateSignature(data, passPhrase);
 
-        document.body.appendChild(form);
-        form.submit();
+        // Convert data to string
+        const pfParamString = dataToString(data);
+        console.log('Payfast request payload:', pfParamString); // Log payload for debugging
+
+        // Generate payment identifier
+        const identifier = await generatePaymentIdentifier(pfParamString);
+        if (identifier) {
+            window.payfast_do_onsite_payment({ uuid: identifier }, (result) => {
+                if (result) {
+                    console.log('Payment completed:', result);
+                    cart = [];
+                    updateCart();
+                    document.getElementById('checkout-form').reset();
+                    window.location.href = '/success.html';
+                } else {
+                    console.log('Payment cancelled or failed');
+                    window.location.href = '/cancel.html';
+                }
+            });
+        }
     } else {
         alert('Order placed successfully! You chose Cash on Delivery.');
         cart = [];
@@ -144,18 +202,12 @@ document.getElementById('checkout-form').addEventListener('submit', async (e) =>
     }
 });
 
-// Generate Payfast signature
-function generatePayfastSignature(fields) {
-    const sortedKeys = Object.keys(fields).sort();
-    let signatureString = '';
-    for (const key of sortedKeys) {
-        if (fields[key]) {
-            signatureString += `${key}=${encodeURIComponent(fields[key]).replace(/%20/g, '+')}&`;
-        }
-    }
-    signatureString = signatureString.slice(0, -1); // Remove trailing &
-    return md5(signatureString);
-}
-
 // Initialize products
-displayProducts();
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof md5 === 'undefined') {
+        console.warn('MD5 library not loaded yet, retrying...');
+        setTimeout(displayProducts, 1000); // Retry after 1 second
+    } else {
+        displayProducts();
+    }
+});

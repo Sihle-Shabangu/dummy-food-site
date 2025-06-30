@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Foodie Haven Café</title>
     <link rel="stylesheet" href="styles.css">
-
 </head>
 <body>
     <header>
@@ -46,7 +45,52 @@
 
 
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-md5/0.7.3/md5.min.js"></script>
-    <script src="script.js" defer></script>
+<script src="script.js" defer></script>
+<script src="node_modules/js-md5/src/md5.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.7.2/axios.min.js"></script>
+<script src="https://www.payfast.co.za/onsite/engine.js"></script>
+<!-- <script src="https://www.payfast.co.za/onsite/engine.js">
+    const axios = require("axios");
+
+    const myData = {
+    "merchant_id": '10039902',
+    "merchant_key": 'avu4plvtessw9',
+    };
+    const passPhrase = 'LetU5DefGo123';
+
+    const dataToString = (dataArray) => {
+    // Convert your data array to a string
+    let pfParamString = "";
+    for (let key in dataArray) {
+        if(dataArray.hasOwnProperty(key)){pfParamString +=`${key}=${encodeURIComponent(dataArray[key].trim()).replace(/%20/g, "+")}&`;}
+    }
+    // Remove last ampersand
+    return pfParamString.slice(0, -1);
+    };
+
+    const generatePaymentIdentifier = async (pfParamString) => {
+    const result = await axios.post(`https://www.payfast.co.za/onsite/process`, pfParamString)
+        .then((res) => {
+            return res.data.uuid || null;
+        })
+        .catch((error) => {
+            console.error(error)
+        });
+    console.log("res.data", result);
+    return result;
+    };
+
+    // Generate signature (see Custom Integration -> Step 2)
+    myData["signature"] = generateSignature(myData, passPhrase);
+
+    // Convert the data array to a string
+    const pfParamString = dataToString(myData);
+
+    // Generate payment identifier
+    const identifier = await generatePaymentIdentifier(pfParamString);
+
+    // popup modal trigger
+    window.payfast_do_onsite_payment({"uuid":`${identifier}`});
+</script> -->
 </body>
 </html>
